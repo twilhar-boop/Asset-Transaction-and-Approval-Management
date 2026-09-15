@@ -128,10 +128,24 @@ async function openUserForm(){
     const out=await r.json(); if(!r.ok){$("userMsg").textContent=out.error||"Could not create user";return;} closeModal(); toast("User registered"); renderUsers();
   };
 }
+
 async function openEquipmentForm(){
-  $("appView").insertAdjacentHTML("beforeend",`<div class="modal" id="modal"><div class="modal-box"><h2>Add Equipment</h2><form id="eqForm"><label>Asset Code<input id="assetCode" required></label><label>Name<input id="assetName" required></label><label>Category<input id="assetCat" required></label><label>Location<input id="assetLoc" required></label><div class="actions"><button class="btn primary">Add</button><button type="button" class="btn secondary" onclick="closeModal()">Cancel</button></div></form></div></div>`);
-  $("eqForm").onsubmit=async e=>{e.preventDefault();const {error}=await sb.from("equipment").insert({asset_code:$("assetCode").value,name:$("assetName").value,category:$("assetCat").value,location:$("assetLoc").value});if(error)toast(error.message);else{closeModal();toast("Equipment added");renderEquipment();}};
+  $("appView").insertAdjacentHTML("beforeend",`<div class="modal" id="modal"><div class="modal-box"><h2>Add Equipment</h2><form id="eqForm"><label>Asset Code<input id="assetCode" required></label><label>Name<input id="assetName" required></label><label>Category<select id="assetCat" required><option value="" disabled selected>Select category</option><option>Computer</option><option>Laptop</option><option>Monitor</option><option>Projector</option><option>Printer</option><option>Microscope</option><option>Laboratory Equipment</option><option>Measuring Instrument</option><option>Electronic Equipment</option><option>Furniture</option><option>Other</option></select></label><label>Location<select id="assetLoc" required><option value="" disabled selected>Select location</option><option>Computer Laboratory 1</option><option>Computer Laboratory 2</option><option>Science Laboratory</option><option>Electronics Laboratory</option><option>Storage Room</option><option>Office</option><option>Other</option></select></label><label id="customLabel" style="display:none">Specify Other<input id="customInput"></label><div class="actions"><button class="btn primary">Add</button><button type="button" class="btn secondary" onclick="closeModal()">Cancel</button></div></form></div></div>`);
+
+  $("assetCat").onchange=$("assetLoc").onchange=()=>{
+    $("customLabel").style.display=$("assetCat").value==="Other"||$("assetLoc").value==="Other"?"block":"none";
+  };
+
+  $("eqForm").onsubmit=async e=>{
+    e.preventDefault();
+    const category=$("assetCat").value==="Other"?$("customInput").value:$("assetCat").value;
+    const location=$("assetLoc").value==="Other"?$("customInput").value:$("assetLoc").value;
+    const {error}=await sb.from("equipment").insert({asset_code:$("assetCode").value,name:$("assetName").value,category,location});
+    if(error)toast(error.message);else{closeModal();toast("Equipment added");renderEquipment();}
+  };
 }
+
+
 async function openBorrowForm(){
   const {data}=await sb.from("equipment").select("*").eq("status","Available").order("asset_code");
   $("appView").insertAdjacentHTML("beforeend",`<div class="modal" id="modal"><div class="modal-box"><h2>Borrowing Request</h2><form id="borrowForm"><label>Equipment<select id="borrowEq" required>${(data||[]).map(x=>`<option value="${x.id}">${esc(x.asset_code)} - ${esc(x.name)}</option>`).join("")}</select></label><label>Purpose<textarea id="purpose" required></textarea></label><label>Start Date<input id="startDate" type="date" required></label><label>End Date<input id="endDate" type="date" required></label><div class="actions"><button class="btn primary">Submit</button><button type="button" class="btn secondary" onclick="closeModal()">Cancel</button></div></form></div></div>`);
